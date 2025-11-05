@@ -12,16 +12,15 @@ const licenses = JSON.parse(fs.readFileSync(path.join(__dirname, 'licenses.json'
 
 app.post('/validate', (req, res) => {
   const { domain, key } = req.body;
-  const domainKey = Object.keys(licenses).find(d => d.includes(domain));
+  const domainKey = Object.keys(licenses).find(d => domain.includes(d.replace('https://', '').replace('/', '')));
   if (!domainKey) return res.json({ valid: false, reason: 'no_key' });
 
   const hash = crypto.createHash('md5').update(key).digest('hex');
-  const valid = licenses[domainKey].keyHash === hash &&
-                new Date(licenses[domainKey].exp) > new Date();
+  const stored = licenses[domainKey];
+  const valid = hash === stored.keyHash && new Date(stored.exp) > new Date();
 
-  console.log('VALIDATE:', { domain, hash, valid });
+  console.log(`CHECK: ${domain} → hash:${hash} | stored:${stored.keyHash} | valid:${valid}`);
   res.json({ valid });
 });
 
-app.get('/', (req, res) => res.send('API LIVE'));
-app.listen(process.env.PORT || 3000, () => console.log('API READY'));
+app.listen(process.env.PORT || 3000, () => console.log('API LIVE'));
