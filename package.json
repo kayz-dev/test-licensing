@@ -1,7 +1,7 @@
 {
-  "name": "shopify-license-api",
+  "name": "shopify-license-api-test",
   "version": "1.0.0",
-  "description": "License validation for Shopify themes",
+  "description": "KAYZ LOCK License Validation API (Test)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -11,6 +11,6 @@
     "cors": "^2.8.5"
   },
   "engines": {
-    "node": "18.x"
+    "node": ">=18"
   }
 }
