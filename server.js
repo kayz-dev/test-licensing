@@ -6,6 +6,7 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: '*' }));
+app.use(express.urlencoded({ extended: true })); // Add this for form parsing!
 
 // Load licenses
 let LICENSES = {};
@@ -15,7 +16,7 @@ try {
   console.error('licenses.json missing');
 }
 
-// Helper: Generate random key (XXXX-XXXX-XXXX-XXXX format)
+// Helper: Generate random key (XXXX-XXXX-XXXX-XXXX)
 function generateKey() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let key = '';
@@ -28,12 +29,13 @@ function generateKey() {
   return key;
 }
 
-// Simple admin password protection (set in Render env vars)
+// Admin password (set in Render env vars)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-secure';
 
 // Admin dashboard (GET)
 app.get('/admin', (req, res) => {
-  if (req.query.pass !== ADMIN_PASSWORD) {
+  const pass = req.query.pass;
+  if (pass !== ADMIN_PASSWORD) {
     return res.status(403).send('<h1>Access Denied</h1><p>Invalid password.</p>');
   }
 
@@ -48,25 +50,29 @@ app.get('/admin', (req, res) => {
         body { font-family: Arial, sans-serif; background: #111; color: #fff; padding: 2rem; max-width: 800px; margin: 0 auto; }
         h1 { color: #0f0; }
         form { margin: 2rem 0; }
-        input { padding: 0.8rem; margin: 0.5rem 0; width: 100%; max-width: 400px; }
-        button { padding: 0.8rem 1.5rem; background: #0f0; color: #000; border: none; cursor: pointer; }
+        input, select { padding: 0.8rem; margin: 0.5rem 0; width: 100%; max-width: 400px; box-sizing: border-box; }
+        button { padding: 0.8rem 1.5rem; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; }
         button:hover { background: #0d0; }
-        pre { background: #222; padding: 1rem; border-radius: 8px; overflow: auto; }
+        pre { background: #222; padding: 1rem; border-radius: 8px; overflow: auto; white-space: pre-wrap; }
+        .success { color: #0f0; }
+        .error { color: #f00; }
       </style>
     </head>
     <body>
       <h1>KAYZ LOCK Admin</h1>
-      <p>Use this page to create new licenses instantly.</p>
+      <p>Create new licenses instantly.</p>
 
-      <form action="/admin/add" method="POST">
+      <form action="/admin/add?pass=${ADMIN_PASSWORD}" method="POST">
+        <input type="hidden" name="pass" value="${ADMIN_PASSWORD}">
+
         <label for="domain">Store Domain (e.g. mystore.myshopify.com):</label><br>
-        <input type="text" id="domain" name="domain" required><br><br>
+        <input type="text" id="domain" name="domain" required placeholder="your-store.myshopify.com"><br><br>
 
-        <label for="exp">Expiration Date (YYYY-MM-DD):</label><br>
+        <label for="exp">Expiration Date:</label><br>
         <input type="date" id="exp" name="exp" required><br><br>
 
-        <label for="themes">Themes (comma separated, e.g. core,premium,enterprise):</label><br>
-        <input type="text" id="themes" name="themes" required placeholder="core,premium"><br><br>
+        <label for="themes">Themes (comma separated):</label><br>
+        <input type="text" id="themes" name="themes" required placeholder="core,premium,enterprise"><br><br>
 
         <button type="submit">Generate & Add License</button>
       </form>
@@ -83,46 +89,52 @@ app.get('/admin', (req, res) => {
 
 // Add new license (POST)
 app.post('/admin/add', (req, res) => {
-  if (req.query.pass !== ADMIN_PASSWORD) {
-    return res.status(403).send('<h1>Access Denied</h1>');
+  const pass = req.query.pass || req.body.pass;
+  if (pass !== ADMIN_PASSWORD) {
+    return res.status(403).send('<h1>Access Denied</h1><p>Invalid password.</p>');
   }
 
   const { domain, exp, themes } = req.body;
+  if (!domain || !exp || !themes) {
+    return res.send('<h1>Error</h1><p>All fields required.</p><a href="/admin?pass=' + ADMIN_PASSWORD + '">Back</a>');
+  }
+
   const normalizedDomain = domain.trim().toLowerCase();
   const key = generateKey();
   const themeArray = themes.split(',').map(t => t.trim());
 
-  // Add or update license
   LICENSES[normalizedDomain] = {
     key,
     exp,
     themes: themeArray
   };
 
-  // Save to file
-  fs.writeFileSync(path.join(__dirname, 'licenses.json'), JSON.stringify(LICENSES, null, 2));
+  try {
+    fs.writeFileSync(path.join(__dirname, 'licenses.json'), JSON.stringify(LICENSES, null, 2));
+    console.log(`[KAYZ LOCK] Added license for ${normalizedDomain}: ${key}`);
 
-  console.log(`[KAYZ LOCK] Added license for ${normalizedDomain}: ${key}`);
-
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head><meta charset="UTF-8"><title>License Created</title>
-    <style>body{font-family:Arial,sans-serif;background:#111;color:#fff;padding:2rem;}</style></head>
-    <body>
-      <h1>License Created Successfully!</h1>
-      <p><strong>Domain:</strong> ${normalizedDomain}</p>
-      <p><strong>License Key:</strong> <code>${key}</code></p>
-      <p><strong>Expiration:</strong> ${exp}</p>
-      <p><strong>Themes:</strong> ${themeArray.join(', ')}</p>
-      <br>
-      <a href="/admin?pass=${ADMIN_PASSWORD}" style="color:#0f0;">Back to Admin</a>
-    </body>
-    </html>
-  `);
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head><meta charset="UTF-8"><title>Success</title>
+      <style>body{font-family:Arial,sans-serif;background:#111;color:#fff;padding:2rem;}</style></head>
+      <body>
+        <h1 class="success">License Created Successfully!</h1>
+        <p><strong>Domain:</strong> ${normalizedDomain}</p>
+        <p><strong>License Key:</strong> <code>${key}</code></p>
+        <p><strong>Expiration:</strong> ${exp}</p>
+        <p><strong>Themes:</strong> ${themeArray.join(', ')}</p>
+        <br>
+        <a href="/admin?pass=${ADMIN_PASSWORD}" style="color:#0f0;">Back to Admin</a>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    res.send('<h1>Error</h1><p>Failed to save license.</p><p>' + err.message + '</p><a href="/admin?pass=' + ADMIN_PASSWORD + '">Back</a>');
+  }
 });
 
-// Your original validation endpoint
+// Your validation endpoint
 app.post('/validate', (req, res) => {
   const { domain, key, theme } = req.body;
 
