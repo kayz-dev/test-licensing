@@ -29,6 +29,10 @@ function generateKey() {
   return key;
 }
 
+// Secret key for /generate (optional – set in Render env vars)
+const GENERATE_SECRET = process.env.GENERATE_SECRET || 'your-secret-123';
+
+// Admin password (set in Render env vars)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-secure';
 
 // Admin dashboard – Aftertone Studios premium feel
@@ -83,7 +87,7 @@ app.get('/admin', (req, res) => {
   `);
 });
 
-// Add license (themes fixed to Aether Starter)
+// Add license (manual via admin)
 app.post('/admin/add', (req, res) => {
   const pass = req.query.pass || req.body.pass;
   if (pass !== ADMIN_PASSWORD) return res.status(403).send('<h1>Access Denied</h1>');
@@ -124,7 +128,69 @@ app.post('/admin/add', (req, res) => {
   }
 });
 
-// Validation endpoint – Enforce only "Aether Starter (Shopify Theme)"
+// Auto-generate license for Zapier (new orders)
+app.post('/generate', (req, res) => {
+  // Optional: Add secret key for security
+  if (req.headers.authorization !== `Bearer ${GENERATE_SECRET}`) {
+    console.log('[AFTERTONE] Unauthorized generate request');
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const { domain, order_id, email, product_title } = req.body;
+
+  if (!domain || !email) {
+    console.log('[AFTERTONE] Missing domain or email');
+    return res.status(400).json({ error: 'Missing domain or email' });
+  }
+
+  const normalizedDomain = domain
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .toLowerCase();
+
+  // Prevent duplicates
+  if (LICENSES[normalizedDomain]) {
+    console.log(`[AFTERTONE] License already exists for ${normalizedDomain}`);
+    return res.json({
+      success: true,
+      key: LICENSES[normalizedDomain].key,
+      domain: normalizedDomain,
+      expires: LICENSES[normalizedDomain].exp,
+      message: 'License already exists'
+    });
+  }
+
+  // Generate new license
+  const key = generateKey();
+  const expDate = new Date();
+  expDate.setFullYear(expDate.getFullYear() + 1); // 1 year
+
+  const expires = expDate.toISOString().split('T')[0];
+
+  LICENSES[normalizedDomain] = {
+    key,
+    exp: expires,
+    themes: ['Aether Starter (Shopify Theme)']
+  };
+
+  try {
+    fs.writeFileSync(path.join(__dirname, 'licenses.json'), JSON.stringify(LICENSES, null, 2));
+    console.log(`[AFTERTONE AUTO] Generated license for ${normalizedDomain}: ${key} (Order: ${order_id})`);
+
+    res.json({
+      success: true,
+      key,
+      domain: normalizedDomain,
+      expires,
+      email
+    });
+  } catch (err) {
+    console.error('[AFTERTONE ERROR]', err);
+    res.status(500).json({ error: 'Failed to save license' });
+  }
+});
+
+// Validation endpoint (for Shopify form)
 app.post('/validate', (req, res) => {
   const { domain, key, theme } = req.body;
   const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -137,7 +203,6 @@ app.post('/validate', (req, res) => {
 
   const isKeyValid = key === store.key;
   const isNotExpired = new Date(store.exp) > new Date();
-  // Enforce the exact theme name
   const isThemeValid = theme === 'Aether Starter (Shopify Theme)';
 
   const valid = isKeyValid && isNotExpired && isThemeValid;
