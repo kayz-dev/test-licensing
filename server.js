@@ -32,10 +32,10 @@ function generateKey() {
 // Admin password (set in Render env vars)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-secure';
 
-// Admin dashboard (GET)
+// Admin dashboard – Premium Aftertone Studios feel
 app.get('/admin', (req, res) => {
   if (req.query.pass !== ADMIN_PASSWORD) {
-    return res.status(403).send('<h1>Access Denied</h1><p>Invalid password.</p>');
+    return res.status(403).send('<h1>Access Denied</h1><p>Invalid credentials.</p>');
   }
 
   res.send(`
@@ -44,43 +44,124 @@ app.get('/admin', (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>KAYZ LOCK Admin</title>
+      <title>Aftertone Studios • License Admin</title>
       <style>
-        body { font-family: Arial, sans-serif; background: #111; color: #fff; padding: 2rem; max-width: 800px; margin: 0 auto; }
-        h1 { color: #0f0; }
-        form { margin: 2rem 0; }
-        input { padding: 0.8rem; margin: 0.5rem 0; width: 100%; max-width: 400px; box-sizing: border-box; }
-        button { padding: 0.8rem 1.5rem; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0d0; }
-        pre { background: #222; padding: 1rem; border-radius: 8px; overflow: auto; white-space: pre-wrap; }
+        body {
+          font-family: 'Helvetica Neue', Arial, sans-serif;
+          background: linear-gradient(135deg, #0f0f0f 0%, #111111 100%);
+          color: #e0e0e0;
+          margin: 0;
+          padding: 3rem 2rem;
+          min-height: 100vh;
+        }
+        .container {
+          max-width: 900px;
+          margin: 0 auto;
+        }
+        h1 {
+          font-size: 2.5rem;
+          font-weight: 300;
+          letter-spacing: 0.05em;
+          color: #ffffff;
+          margin-bottom: 0.5rem;
+        }
+        .subtitle {
+          font-size: 1.1rem;
+          color: #888;
+          margin-bottom: 2.5rem;
+        }
+        form {
+          background: rgba(30,30,30,0.6);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+          padding: 2.5rem;
+          margin-bottom: 3rem;
+        }
+        label {
+          display: block;
+          font-size: 0.95rem;
+          color: #bbb;
+          margin-bottom: 0.5rem;
+        }
+        input {
+          width: 100%;
+          padding: 1rem;
+          background: rgba(40,40,40,0.7);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+          color: #fff;
+          font-size: 1rem;
+          margin-bottom: 1.5rem;
+          transition: border-color 0.3s;
+        }
+        input:focus {
+          outline: none;
+          border-color: #ffffff;
+        }
+        button {
+          background: #ffffff;
+          color: #000;
+          border: none;
+          padding: 1rem 2rem;
+          font-size: 1.05rem;
+          font-weight: 600;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.3s, transform 0.2s;
+        }
+        button:hover {
+          background: #f0f0f0;
+          transform: translateY(-2px);
+        }
+        pre {
+          background: rgba(20,20,20,0.8);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 12px;
+          padding: 1.5rem;
+          font-family: 'Courier New', monospace;
+          white-space: pre-wrap;
+          overflow: auto;
+        }
+        a {
+          color: #ffffff;
+          text-decoration: none;
+          opacity: 0.7;
+        }
+        a:hover { opacity: 1; }
       </style>
     </head>
     <body>
-      <h1>KAYZ LOCK Admin</h1>
-      <p>Create new licenses instantly.</p>
+      <div class="container">
+        <h1>Aftertone Studios</h1>
+        <p class="subtitle">License Management</p>
 
-      <form action="/admin/add?pass=${ADMIN_PASSWORD}" method="POST">
-        <input type="hidden" name="pass" value="${ADMIN_PASSWORD}">
-        <label>Store Domain (e.g. mystore.myshopify.com):</label><br>
-        <input type="text" name="domain" required placeholder="your-store.myshopify.com"><br><br>
-        <label>Expiration Date:</label><br>
-        <input type="date" name="exp" required><br><br>
-        <label>Themes (comma separated):</label><br>
-        <input type="text" name="themes" required placeholder="core,premium"><br><br>
-        <button type="submit">Generate & Add License</button>
-      </form>
+        <form action="/admin/add?pass=${ADMIN_PASSWORD}" method="POST">
+          <input type="hidden" name="pass" value="${ADMIN_PASSWORD}">
+          <label>Store Domain</label>
+          <input type="text" name="domain" required placeholder="your-store.myshopify.com">
 
-      <h2>Current Licenses</h2>
-      <pre>${JSON.stringify(LICENSES, null, 2)}</pre>
+          <label>Expiration Date</label>
+          <input type="date" name="exp" required>
 
-      <br>
-      <a href="/admin?pass=${ADMIN_PASSWORD}" style="color:#0f0;">Refresh</a>
+          <label>Themes (comma separated)</label>
+          <input type="text" name="themes" required placeholder="core,premium,enterprise">
+
+          <button type="submit">Generate License</button>
+        </form>
+
+        <h2 style="font-weight:300;color:#fff;">Active Licenses</h2>
+        <pre>${JSON.stringify(LICENSES, null, 2)}</pre>
+
+        <br>
+        <a href="/admin?pass=${ADMIN_PASSWORD}">Refresh</a>
+      </div>
     </body>
     </html>
   `);
 });
 
-// Add new license (POST)
+// Add new license
 app.post('/admin/add', (req, res) => {
   const pass = req.query.pass || req.body.pass;
   if (pass !== ADMIN_PASSWORD) {
@@ -104,30 +185,39 @@ app.post('/admin/add', (req, res) => {
 
   try {
     fs.writeFileSync(path.join(__dirname, 'licenses.json'), JSON.stringify(LICENSES, null, 2));
-    console.log(`[KAYZ LOCK] Added license for ${normalizedDomain}: ${key}`);
+    console.log(`[AFTERTONE] Added license for ${normalizedDomain}: ${key}`);
 
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
-      <head><meta charset="UTF-8"><title>Success</title>
-      <style>body{font-family:Arial,sans-serif;background:#111;color:#fff;padding:2rem;}</style></head>
+      <head>
+        <meta charset="UTF-8">
+        <title>License Created</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #111; color: #e0e0e0; padding: 4rem 2rem; text-align: center; }
+          h1 { font-size: 2.2rem; font-weight: 300; color: #ffffff; }
+          p { margin: 1rem 0; font-size: 1.1rem; }
+          code { background: #222; padding: 0.4rem 0.8rem; border-radius: 4px; }
+          a { color: #ffffff; text-decoration: none; }
+        </style>
+      </head>
       <body>
-        <h1 style="color:#0f0;">License Created Successfully!</h1>
+        <h1>License Generated</h1>
         <p><strong>Domain:</strong> ${normalizedDomain}</p>
-        <p><strong>License Key:</strong> <code>${key}</code></p>
+        <p><strong>Key:</strong> <code>${key}</code></p>
         <p><strong>Expiration:</strong> ${exp}</p>
         <p><strong>Themes:</strong> ${themeArray.join(', ')}</p>
         <br>
-        <a href="/admin?pass=${ADMIN_PASSWORD}" style="color:#0f0;">Back to Admin</a>
+        <a href="/admin?pass=${ADMIN_PASSWORD}">Back to Admin</a>
       </body>
       </html>
     `);
   } catch (err) {
-    res.send('<h1>Error</h1><p>Failed to save license.</p><p>' + err.message + '</p><a href="/admin?pass=' + ADMIN_PASSWORD + '">Back</a>');
+    res.send('<h1>Error</h1><p>Failed to save.</p><a href="/admin?pass=' + ADMIN_PASSWORD + '">Back</a>');
   }
 });
 
-// Validation endpoint (updated with clear error messages)
+// Validation endpoint – Clean, premium messages
 app.post('/validate', (req, res) => {
   const { domain, key, theme } = req.body;
 
@@ -137,7 +227,7 @@ app.post('/validate', (req, res) => {
 
   const store = LICENSES[normalizedDomain];
   if (!store) {
-    console.log(`[KAYZ LOCK] ${normalizedDomain} → domain not found`);
+    console.log(`[AFTERTONE] ${normalizedDomain} → domain not found`);
     return res.json({ valid: false, error: 'Invalid domain (not detected)' });
   }
 
@@ -147,7 +237,7 @@ app.post('/validate', (req, res) => {
 
   const valid = isKeyValid && isNotExpired && isThemeValid;
 
-  console.log(`[KAYZ LOCK] ${normalizedDomain} / ${theme} → ${valid ? 'UNLOCKED' : 'BLOCKED'}`);
+  console.log(`[AFTERTONE] ${normalizedDomain} / ${theme} → ${valid ? 'UNLOCKED' : 'BLOCKED'}`);
 
   if (valid) {
     res.json({ valid: true, message: 'License activated successfully' });
@@ -160,7 +250,7 @@ app.post('/validate', (req, res) => {
   }
 });
 
-app.get('/', (req, res) => res.send('KAYZ LOCK v3 – PREMIUM'));
+app.get('/', (req, res) => res.send('Aftertone Studios – Premium Access'));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API LIVE on port ${PORT}`));
+app.listen(PORT, () => console.log(`Aftertone API LIVE on port ${PORT}`));
