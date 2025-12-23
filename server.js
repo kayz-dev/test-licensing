@@ -30,8 +30,8 @@ function generateKey() {
 }
 
 // Secret keys (set in Render env vars)
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-secure';
-const GENERATE_SECRET = process.env.GENERATE_SECRET || 'your-secret-123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'your-super-secret-123';
+const GENERATE_SECRET = process.env.GENERATE_SECRET || 'aftertone-zapier-secure-2025';
 
 // Admin dashboard – Aftertone Studios premium feel
 app.get('/admin', (req, res) => {
