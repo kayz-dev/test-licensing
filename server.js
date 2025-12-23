@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: '*' }));
-app.use(express.urlencoded({ extended: true })); // Add this for form parsing!
+app.use(express.urlencoded({ extended: true }));
 
 // Load licenses
 let LICENSES = {};
@@ -34,8 +34,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-s
 
 // Admin dashboard (GET)
 app.get('/admin', (req, res) => {
-  const pass = req.query.pass;
-  if (pass !== ADMIN_PASSWORD) {
+  if (req.query.pass !== ADMIN_PASSWORD) {
     return res.status(403).send('<h1>Access Denied</h1><p>Invalid password.</p>');
   }
 
@@ -50,12 +49,10 @@ app.get('/admin', (req, res) => {
         body { font-family: Arial, sans-serif; background: #111; color: #fff; padding: 2rem; max-width: 800px; margin: 0 auto; }
         h1 { color: #0f0; }
         form { margin: 2rem 0; }
-        input, select { padding: 0.8rem; margin: 0.5rem 0; width: 100%; max-width: 400px; box-sizing: border-box; }
+        input { padding: 0.8rem; margin: 0.5rem 0; width: 100%; max-width: 400px; box-sizing: border-box; }
         button { padding: 0.8rem 1.5rem; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; }
         button:hover { background: #0d0; }
         pre { background: #222; padding: 1rem; border-radius: 8px; overflow: auto; white-space: pre-wrap; }
-        .success { color: #0f0; }
-        .error { color: #f00; }
       </style>
     </head>
     <body>
@@ -64,16 +61,12 @@ app.get('/admin', (req, res) => {
 
       <form action="/admin/add?pass=${ADMIN_PASSWORD}" method="POST">
         <input type="hidden" name="pass" value="${ADMIN_PASSWORD}">
-
-        <label for="domain">Store Domain (e.g. mystore.myshopify.com):</label><br>
-        <input type="text" id="domain" name="domain" required placeholder="your-store.myshopify.com"><br><br>
-
-        <label for="exp">Expiration Date:</label><br>
-        <input type="date" id="exp" name="exp" required><br><br>
-
-        <label for="themes">Themes (comma separated):</label><br>
-        <input type="text" id="themes" name="themes" required placeholder="core,premium,enterprise"><br><br>
-
+        <label>Store Domain (e.g. mystore.myshopify.com):</label><br>
+        <input type="text" name="domain" required placeholder="your-store.myshopify.com"><br><br>
+        <label>Expiration Date:</label><br>
+        <input type="date" name="exp" required><br><br>
+        <label>Themes (comma separated):</label><br>
+        <input type="text" name="themes" required placeholder="core,premium"><br><br>
         <button type="submit">Generate & Add License</button>
       </form>
 
@@ -91,7 +84,7 @@ app.get('/admin', (req, res) => {
 app.post('/admin/add', (req, res) => {
   const pass = req.query.pass || req.body.pass;
   if (pass !== ADMIN_PASSWORD) {
-    return res.status(403).send('<h1>Access Denied</h1><p>Invalid password.</p>');
+    return res.status(403).send('<h1>Access Denied</h1>');
   }
 
   const { domain, exp, themes } = req.body;
@@ -119,7 +112,7 @@ app.post('/admin/add', (req, res) => {
       <head><meta charset="UTF-8"><title>Success</title>
       <style>body{font-family:Arial,sans-serif;background:#111;color:#fff;padding:2rem;}</style></head>
       <body>
-        <h1 class="success">License Created Successfully!</h1>
+        <h1 style="color:#0f0;">License Created Successfully!</h1>
         <p><strong>Domain:</strong> ${normalizedDomain}</p>
         <p><strong>License Key:</strong> <code>${key}</code></p>
         <p><strong>Expiration:</strong> ${exp}</p>
@@ -134,7 +127,7 @@ app.post('/admin/add', (req, res) => {
   }
 });
 
-// Your validation endpoint
+// Validation endpoint (updated with clear error messages)
 app.post('/validate', (req, res) => {
   const { domain, key, theme } = req.body;
 
@@ -145,7 +138,7 @@ app.post('/validate', (req, res) => {
   const store = LICENSES[normalizedDomain];
   if (!store) {
     console.log(`[KAYZ LOCK] ${normalizedDomain} → domain not found`);
-    return res.json({ valid: false, reason: 'domain' });
+    return res.json({ valid: false, error: 'Invalid domain (not detected)' });
   }
 
   const isKeyValid = key === store.key;
@@ -159,11 +152,11 @@ app.post('/validate', (req, res) => {
   if (valid) {
     res.json({ valid: true, message: 'License activated successfully' });
   } else {
-    let reason = 'invalid';
-    if (!isKeyValid) reason = 'key';
-    else if (!isNotExpired) reason = 'expired';
-    else if (!isThemeValid) reason = 'theme';
-    res.json({ valid: false, reason });
+    let error = 'Invalid license';
+    if (!isKeyValid) error = 'Invalid license key';
+    else if (!isNotExpired) error = 'License has expired';
+    else if (!isThemeValid) error = 'Invalid theme selection';
+    res.json({ valid: false, error });
   }
 });
 
