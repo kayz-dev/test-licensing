@@ -29,11 +29,9 @@ function generateKey() {
   return key;
 }
 
-// Secret key for /generate (optional – set in Render env vars)
-const GENERATE_SECRET = process.env.GENERATE_SECRET || 'your-secret-123';
-
-// Admin password (set in Render env vars)
+// Secret keys (set in Render env vars)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-secure';
+const GENERATE_SECRET = process.env.GENERATE_SECRET || 'your-secret-123';
 
 // Admin dashboard – Aftertone Studios premium feel
 app.get('/admin', (req, res) => {
@@ -130,8 +128,8 @@ app.post('/admin/add', (req, res) => {
 
 // Auto-generate license for Zapier (new orders)
 app.post('/generate', (req, res) => {
-  // Optional: Add secret key for security
-  if (req.headers.authorization !== `Bearer ${GENERATE_SECRET}`) {
+  // Security check using custom header (fixes Zapier space issue)
+  if (req.headers['x-generate-secret'] !== GENERATE_SECRET) {
     console.log('[AFTERTONE] Unauthorized generate request');
     return res.status(403).json({ error: 'Unauthorized' });
   }
