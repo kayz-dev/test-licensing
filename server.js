@@ -30,8 +30,8 @@ function generateKey() {
 }
 
 // Secret keys (set in Render env vars)
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'your-super-secret-123';
-const GENERATE_SECRET = process.env.GENERATE_SECRET || 'aftertone-zapier-secure-2025';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-this-to-something-secure';
+const GENERATE_SECRET = process.env.GENERATE_SECRET || 'your-secret-123';
 
 // Admin dashboard – Aftertone Studios premium feel
 app.get('/admin', (req, res) => {
@@ -128,18 +128,17 @@ app.post('/admin/add', (req, res) => {
 
 // Auto-generate license for Zapier (new orders)
 app.post('/generate', (req, res) => {
-  // Security check using custom header (fixes Zapier space issue)
+  // Security check
   if (req.headers['x-generate-secret'] !== GENERATE_SECRET) {
     console.log('[AFTERTONE] Unauthorized generate request');
     return res.status(403).json({ error: 'Unauthorized' });
   }
 
-  const { domain, order_id, email, product_title } = req.body;
+  let { domain, order_id, email, product_title } = req.body;
 
-  if (!domain || !email) {
-    console.log('[AFTERTONE] Missing domain or email');
-    return res.status(400).json({ error: 'Missing domain or email' });
-  }
+  // Fallbacks for missing fields (common in test/guest orders)
+  domain = domain || 'unknown.myshopify.com';
+  email = email || 'no-email@aftertonestudios.com';
 
   const normalizedDomain = domain
     .replace(/^https?:\/\//, '')
@@ -161,8 +160,7 @@ app.post('/generate', (req, res) => {
   // Generate new license
   const key = generateKey();
   const expDate = new Date();
-  expDate.setFullYear(expDate.getFullYear() + 1); // 1 year
-
+  expDate.setFullYear(expDate.getFullYear() + 1);
   const expires = expDate.toISOString().split('T')[0];
 
   LICENSES[normalizedDomain] = {
@@ -173,7 +171,7 @@ app.post('/generate', (req, res) => {
 
   try {
     fs.writeFileSync(path.join(__dirname, 'licenses.json'), JSON.stringify(LICENSES, null, 2));
-    console.log(`[AFTERTONE AUTO] Generated license for ${normalizedDomain}: ${key} (Order: ${order_id})`);
+    console.log(`[AFTERTONE AUTO] Generated license for ${normalizedDomain}: ${key} (Order: ${order_id || 'unknown'})`);
 
     res.json({
       success: true,
