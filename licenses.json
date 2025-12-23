@@ -1,42 +1,12 @@
 {
-  "aether-starter.myshopify.com": {
-    "key": "KAYZ-9F3A-7B2E-1D4C",
-    "exp": "2026-12-31"
+  "test-store.myshopify.com": {
+    "key": "TEST-1234-5678-9012",
+    "exp": "2026-12-31",
+    "themes": ["core", "premium"]
   },
-  "moodswings-1.myshopify.com": {
-    "key": "KAYZ-FF2A-7B5E-1I5C",
-    "exp": "2025-12-30"
-  },
-  "6vhwkm-ag.myshopify.com": {
-    "key": "KAYZ-OF9E-A3FE-EI9C",
-    "exp": "2096-12-30"
-  },
-  "ey3pdf-jt.myshopify.com": {
-    "key": "KAYZ-8E8A-9BFE-FI5C",
-    "exp": "2025-12-30"
-  },
-  "allureismyfavoritefeeling.myshopify.com": {
-    "key": "KAYZ-23F4A-7Y53-1IOC",
-    "exp": "2027-12-30"
-  },
-  "vpsar0-40.myshopify.com": {
-    "key": "KAYZ-245F0-7Y53-1IOC",
-    "exp": "2097-12-30"
-  },
-  "innercurrents.myshopify.com": {
-    "key": "KAYZ-X7M9-Q2R5-T8V1",
-    "exp": "2025-12-30"
-  },
-  "laa-proxy.myshopify.com": {
-    "key": "KAYZ-F7E9-Q285-TOV1",
-    "exp": "9999-11-17"
-  },
-  "8dfb6b-2.myshopify.com": {
-    "key": "KAYZ-F9E9-T415-TIE1",
-    "exp": "2026-11-16"
-  },
-  "d7e7f7.myshopify.com": {
-    "key": "KAYZ-4F3A-2E2E-1DGC",
-    "exp": "9999-11-17"
+  "another-test-store.myshopify.com": {
+    "key": "TEST-ABCD-EFGH-IJKL",
+    "exp": "2027-01-01",
+    "themes": ["premium"]
   }
 }
